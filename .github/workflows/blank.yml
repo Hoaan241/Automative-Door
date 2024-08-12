@@ -18,49 +18,61 @@ void Clock_Init(void)
      CLK_ECKR_HSEEN = 0;
      CLK_ICKR_LSIEN = 1;
      CLK_SWCR_SWIEN = 1;
-     CLK_CKDIVR_HSIDIV =  0X00;
+     CLK_CKDIVR_HSIDIV =  0X03;
      CLK_SWCR_SWEN = 1;
      CLK_SWR = 0XE1;
      
 }
 
 static void Timer2_Init(){
-    TIM2_PSCR = 4;
-    TIM2_ARRH = ((unsigned char)(200 >> 8)&0xFF);
-    TIM2_ARRL          = (unsigned char)(200 & 0xFF);
-    TIM2_CR1_ARPE      = 1;
-    TIM2_IER_UIE       = 1;
-    TIM2_CR1_CEN       = 1;
+    TIM2_PSCR = 0;
+    TIM2_EGR_UG = 1;
+    TIM2_ARRH= 0xFF;
+    TIM2_ARRL = 0XFF;
+    TIM2_SR1_UIF = 0;
+    TIM2_IER_UIE = 1;
+    TIM2_CR1_CEN = 1;
+    __enable_interrupt();
+}
+
+void Timer4(void){
+      TIM4_PSCR_PSC = 3;
+      TIM4_CNTR = 0;
+      TIM4_SR_UIF = 0;
+      TIM4_IER_UIE = 1;
+      TIM4_EGR_UG = 1;
+      TIM4_CR1_CEN = 1;
+     __enable_interrupt();
 }
 
 void GPIO_Init(){
      PC_DDR_DDR5 = 1;
      PC_CR1_C15 = 1;  // D1
-     PC_ODR_ODR5 = 1;
+     PC_ODR_ODR5 = 0;
      
      PC_DDR_DDR4 = 1;
      PC_CR1_C14 = 1;  // D1
-     PC_ODR_ODR4 = 1;     
+     PC_ODR_ODR4 = 0;     
      
      PA_DDR_DDR1 = 1;
      PA_CR1_C11 = 1;  // LED_A
-     PA_ODR_ODR1 = 0;
+     PA_ODR_ODR1 = 1;
      
      PA_DDR_DDR2 = 1;
      PA_CR1_C12 = 1;  // LED_B
-     PA_ODR_ODR2 = 0;
+     PA_ODR_ODR2 = 1;
      
      PA_DDR_DDR3 = 1;
      PA_CR1_C13 = 1;  // LED_C
-     PA_ODR_ODR3 = 0;
+     PA_ODR_ODR3 = 1;
      
      PC_DDR_DDR7 = 1;
      PC_CR1_C17 = 1;  // LED_D
-     PC_ODR_ODR7 = 0;
+     PC_ODR_ODR7 = 1;
      
      PD_DDR_DDR2 = 1;
      PD_CR1_C12 = 1;  // LED_E
-     PD_ODR_ODR2 = 0;
+     PD_ODR_ODR2 = 1;
      
      
      PD_DDR_DDR3 = 1;
@@ -85,21 +97,24 @@ unsigned char valueLed[10];
          valueLed[1] = 0xA4;
          valueLed[2] = 0xF9;
   count++;
-  if(count == 100){
+  if(count >= 10){
    D2 = 0;
+   D1 = 1;
   PA_ODR = (PA_ODR & 0xF1) | ((valueLed[1] << 1) & 0x0F);
   PC_ODR = (PC_ODR & 0x7F) | ((valueLed[1] << 4) & 0xF0);
   PD_ODR = (PD_ODR & 0xE3) | ((valueLed[1] >> 2) & 0x1E);
   }
-  if(count == 500){
+  if(count >= 20){
    D1 = 0;
+   D2 = 1;
    PA_ODR = (PA_ODR & 0xF1) | ((valueLed[2] << 1) & 0x0F);
   PC_ODR = (PC_ODR & 0x7F) | ((valueLed[2] << 4) & 0xF0);
   PD_ODR = (PD_ODR & 0xE3) | ((valueLed[2] >> 2) & 0x1E);
   }
-  if(count == 700){
-  count = 0x00;
+  else if(count >= 21){
+  count = 9;
   }
+  count++;
     TIM2_SR1_UIF = 0;
 }
 
