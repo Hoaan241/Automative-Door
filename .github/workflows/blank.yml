@@ -1,0 +1,117 @@
+#include <iostm8s103f3.h>
+#include <intrinsics.h>
+
+#define D1        PC_ODR_ODR5
+#define LED_A     PA_ODR_ODR1
+#define LED_B     PA_ODR_ODR2
+#define LED_C     PA_ODR_ODR3
+#define LED_D     PC_ODR_ODR7
+#define LED_E     PD_ODR_ODR2
+#define LED_F     PD_ODR_ODR3
+#define LED_G     PD_ODR_ODR4
+#define D2        PC_ODR_ODR4
+
+
+
+void Clock_Init(void)
+{
+     CLK_ECKR_HSEEN = 0;
+     CLK_ICKR_LSIEN = 1;
+     CLK_SWCR_SWIEN = 1;
+     CLK_CKDIVR_HSIDIV =  0X00;
+     CLK_SWCR_SWEN = 1;
+     CLK_SWR = 0XE1;
+     
+}
+
+static void Timer2_Init(){
+    TIM2_PSCR = 4;
+    TIM2_ARRH = ((unsigned char)(200 >> 8)&0xFF);
+    TIM2_ARRL          = (unsigned char)(200 & 0xFF);
+    TIM2_CR1_ARPE      = 1;
+    TIM2_IER_UIE       = 1;
+    TIM2_CR1_CEN       = 1;
+}
+
+void GPIO_Init(){
+     PC_DDR_DDR5 = 1;
+     PC_CR1_C15 = 1;  // D1
+     PC_ODR_ODR5 = 1;
+     
+     PC_DDR_DDR4 = 1;
+     PC_CR1_C14 = 1;  // D1
+     PC_ODR_ODR4 = 1;     
+     
+     PA_DDR_DDR1 = 1;
+     PA_CR1_C11 = 1;  // LED_A
+     PA_ODR_ODR1 = 0;
+     
+     PA_DDR_DDR2 = 1;
+     PA_CR1_C12 = 1;  // LED_B
+     PA_ODR_ODR2 = 0;
+     
+     PA_DDR_DDR3 = 1;
+     PA_CR1_C13 = 1;  // LED_C
+     PA_ODR_ODR3 = 0;
+     
+     PC_DDR_DDR7 = 1;
+     PC_CR1_C17 = 1;  // LED_D
+     PC_ODR_ODR7 = 0;
+     
+     PD_DDR_DDR2 = 1;
+     PD_CR1_C12 = 1;  // LED_E
+     PD_ODR_ODR2 = 0;
+     
+     
+     PD_DDR_DDR3 = 1;
+     PD_CR1_C13 = 1;  // LED F
+     PD_ODR_ODR3 = 1;
+     
+     PD_DDR_DDR4 = 1;
+     PD_CR1_C14 = 1;  // LED G
+     PD_ODR_ODR4 = 1;
+     
+     PB_DDR_DDR5 = 1;
+     PB_CR1_C15 = 1;
+     
+
+
+}
+#pragma vector = TIM2_OVR_UIF_vector
+__interrupt void TIM2_OVR_UIF_handler(void)
+{
+static unsigned char count = 0x00;
+unsigned char valueLed[10];
+         valueLed[1] = 0xA4;
+         valueLed[2] = 0xF9;
+  count++;
+  if(count == 100){
+   D2 = 0;
+  PA_ODR = (PA_ODR & 0xF1) | ((valueLed[1] << 1) & 0x0F);
+  PC_ODR = (PC_ODR & 0x7F) | ((valueLed[1] << 4) & 0xF0);
+  PD_ODR = (PD_ODR & 0xE3) | ((valueLed[1] >> 2) & 0x1E);
+  }
+  if(count == 500){
+   D1 = 0;
+   PA_ODR = (PA_ODR & 0xF1) | ((valueLed[2] << 1) & 0x0F);
+  PC_ODR = (PC_ODR & 0x7F) | ((valueLed[2] << 4) & 0xF0);
+  PD_ODR = (PD_ODR & 0xE3) | ((valueLed[2] >> 2) & 0x1E);
+  }
+  if(count == 700){
+  count = 0x00;
+  }
+    TIM2_SR1_UIF = 0;
+}
+
+int main(){
+     __disable_interrupt();
+     Timer2_Init();
+     Clock_Init();
+     GPIO_Init();
+     __enable_interrupt();
+     while(1)
+     {
+         
+  
+   }
+}
