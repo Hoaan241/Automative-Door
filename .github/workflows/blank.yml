@@ -1,6 +1,6 @@
 #include <iostm8s103f3.h>
 #include <intrinsics.h>
-
+#include "delay.h"
 #define D1        PC_ODR_ODR5
 #define LED_A     PA_ODR_ODR1
 #define LED_B     PA_ODR_ODR2
@@ -10,7 +10,7 @@
 #define LED_F     PD_ODR_ODR3
 #define LED_G     PD_ODR_ODR4
 #define D2        PC_ODR_ODR4
-
+#define D3        PD_ODR_ODR6
 
 
 void Clock_Init(void)
@@ -18,7 +18,7 @@ void Clock_Init(void)
      CLK_ECKR_HSEEN = 0;
      CLK_ICKR_LSIEN = 1;
      CLK_SWCR_SWIEN = 1;
-     CLK_CKDIVR_HSIDIV =  0X03;
+     CLK_CKDIVR_HSIDIV =  0X00;
      CLK_SWCR_SWEN = 1;
      CLK_SWR = 0XE1;
      
@@ -27,8 +27,10 @@ void Clock_Init(void)
 static void Timer2_Init(){
     TIM2_PSCR = 0;
     TIM2_EGR_UG = 1;
-    TIM2_ARRH= 0xFF;
-    TIM2_ARRL = 0XFF;
+    TIM2_ARRH = 0x40;            // Auto-Reload High Byte
+    TIM2_ARRL = 0xFF; 
+    TIM2_CNTRL= 0x00;
+    TIM2_CNTRH = 0X00;
     TIM2_SR1_UIF = 0;
     TIM2_IER_UIE = 1;
     TIM2_CR1_CEN = 1;
@@ -45,74 +47,56 @@ void Timer4(void){
      __enable_interrupt();
 }
 
-void GPIO_Init(){
-     PC_DDR_DDR5 = 1;
-     PC_CR1_C15 = 1;  // D1
-     PC_ODR_ODR5 = 0;
-     
-     PC_DDR_DDR4 = 1;
-     PC_CR1_C14 = 1;  // D1
-     PC_ODR_ODR4 = 0;     
-     
-     PA_DDR_DDR1 = 1;
-     PA_CR1_C11 = 1;  // LED_A
-     PA_ODR_ODR1 = 1;
-     
-     PA_DDR_DDR2 = 1;
-     PA_CR1_C12 = 1;  // LED_B
-     PA_ODR_ODR2 = 1;
-     
-     PA_DDR_DDR3 = 1;
-     PA_CR1_C13 = 1;  // LED_C
-     PA_ODR_ODR3 = 1;
-     
-     PC_DDR_DDR7 = 1;
-     PC_CR1_C17 = 1;  // LED_D
-     PC_ODR_ODR7 = 1;
-     
-     PD_DDR_DDR2 = 1;
-     PD_CR1_C12 = 1;  // LED_E
-     PD_ODR_ODR2 = 1;
-     
-     
-     PD_DDR_DDR3 = 1;
-     PD_CR1_C13 = 1;  // LED F
-     PD_ODR_ODR3 = 1;
-     
-     PD_DDR_DDR4 = 1;
-     PD_CR1_C14 = 1;  // LED G
-     PD_ODR_ODR4 = 1;
-     
-     PB_DDR_DDR5 = 1;
-     PB_CR1_C15 = 1;
-     
-
-
-}
 #pragma vector = TIM2_OVR_UIF_vector
 __interrupt void TIM2_OVR_UIF_handler(void)
 {
 static unsigned char count = 0x00;
 unsigned char valueLed[10];
-         valueLed[1] = 0xA4;
-         valueLed[2] = 0xF9;
-  count++;
-  if(count >= 10){
-   D2 = 0;
+         valueLed[0] = 0xC0;
+         valueLed[1] = 0xF9;
+         valueLed[2] = 0xA4;
+         valueLed[3] = 0xB0;
+         valueLed[4] = 0x99;
+         valueLed[5] = 0x92;
+         valueLed[6] = 0x82;
+         valueLed[7] = 0xF8;
+         valueLed[8] = 0x80;
+         valueLed[9] = 0x90;
+
+  for(unsigned char i = 0; i < 10; i++)
+  {
+     count++;
+  if(count <= 30 && count >= 1){
    D1 = 1;
-  PA_ODR = (PA_ODR & 0xF1) | ((valueLed[1] << 1) & 0x0F);
-  PC_ODR = (PC_ODR & 0x7F) | ((valueLed[1] << 4) & 0xF0);
-  PD_ODR = (PD_ODR & 0xE3) | ((valueLed[1] >> 2) & 0x1E);
+       D2 = 0;
+         D3 = 0;
+  PA_ODR = (PA_ODR & 0xF1) | ((valueLed[i] << 1) & 0x0F);
+  PC_ODR = (PC_ODR & 0x7F) | ((valueLed[i] << 4) & 0xF0);
+  PD_ODR = (PD_ODR & 0xE3) | ((valueLed[i] >> 2) & 0x1E);
   }
-  if(count >= 20){
-   D1 = 0;
-   D2 = 1;
-   PA_ODR = (PA_ODR & 0xF1) | ((valueLed[2] << 1) & 0x0F);
-  PC_ODR = (PC_ODR & 0x7F) | ((valueLed[2] << 4) & 0xF0);
-  PD_ODR = (PD_ODR & 0xE3) | ((valueLed[2] >> 2) & 0x1E);
+  
+  if(count <= 50 && count >= 30){
+    D1 = 0;
+    delay_us(200);
+    D2 = 1;
+   PA_ODR = (PA_ODR & 0xF1) | ((valueLed[i] << 1) & 0x0F);
+  PC_ODR = (PC_ODR & 0x7F) | ((valueLed[i] << 4) & 0xF0);
+  PD_ODR = (PD_ODR & 0xE3) | ((valueLed[i] >> 2) & 0x1E);
+  
   }
-  else if(count >= 21){
-  count = 9;
+   if(count <= 70 && count >= 50){
+    D3 = 1;
+       D1 = 0;
+          D2 = 0;
+   PA_ODR = (PA_ODR & 0xF1) | ((valueLed[i] << 1) & 0x0F);
+  PC_ODR = (PC_ODR & 0x7F) | ((valueLed[i] << 4) & 0xF0);
+  PD_ODR = (PD_ODR & 0xE3) | ((valueLed[i] >> 2) & 0x1E);
+  }
+  if(count >= 70)
+  {
+   delay_ms(200);
+   count = 0;
+ }
   }
   count++;
     TIM2_SR1_UIF = 0;
